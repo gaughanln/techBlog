@@ -1,82 +1,37 @@
 const router = require('express').Router();
-const { User } = require('../../models');
+const { User } = require('../models');
+const withAuth = require('../utils/auth');
 
-router.post('/', async (req, res) => {
+router.get('/', withAuth, async (req, res) => {
   try {
-    const userData = await User.create(req.body);
+    const userData = await User.findAll({
+      attributes: { exclude: ['password'] },
+      order: [['name', 'ASC']],
+    });
 
-    req.session.save(() => {
-      req.session.user_id = userData.id;
-      req.session.logged_in = true;
+    const users = userData.map((project) => project.get({ plain: true })); //update project
 
-      res.status(200).json(userData);
+    res.render('homepage', { //do I need to add a route for this?
+      users,
+     
+      // rendering the homepage once the user is logged in
+      logged_in: req.session.logged_in,
     });
   } catch (err) {
-    res.status(400).json(err);
+    res.status(500).json(err);
   }
 });
 
-router.post('/login', async (req, res) => {
-  try {
-    const userData = await User.findOne({ where: { email: req.body.email } });
+router.get('/login', (req, res) => {
+  // if they login then go to the homepage, otherwise render the login page
 
-    if (!userData) {
-      res
-        .status(400)
-        .json({ message: 'Incorrect email or password, please try again' });
-      return;
-    }
-
-    const validPassword = await userData.checkPassword(req.body.password);
-
-    if (!validPassword) {
-      res
-        .status(400)
-        .json({ message: 'Incorrect email or password, please try again' });
-      return;
-    }
-
-    req.session.save(() => {
-      req.session.user_id = userData.id;
-      req.session.logged_in = true;
-      
-      res.json({ user: userData, message: 'You are now logged in!' });
-    });
-
-  } catch (err) {
-    res.status(400).json(err);
-  }
-});
-
-// checking the user login information. Only once they're logged in, then render their profile.
-router.get('/', auth, async (req, res) => {
-try {
-  const userData = await User.findAll({
-    attributes: { exclude: ['password'] },
-    order: [['name', 'ASC']],
-  });
-
-  const users = userData.map((project) => project.get({ plain: true })); //change project
-
-  res.render('/profile', { //change route?
-    users,
-    logged_in: req.session.logged_in,
-      });
-} catch(err) {
-  res.status(500).json(err);
-}
-});
-
-
-
-router.post('/logout', (req, res) => {
+  // Do we want them to go to homepage or where?
   if (req.session.logged_in) {
-    req.session.destroy(() => {
-      res.status(204).end();
-    });
-  } else {
-    res.status(404).end();
+    res.redirect('/');
+    return;
   }
+
+  res.render('login');
 });
 
 module.exports = router;

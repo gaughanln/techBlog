@@ -5,4 +5,3 @@ router.use('/users', userRoutes);
 
 module.exports = router;
 
-// need to update routes
