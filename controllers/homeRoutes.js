@@ -11,7 +11,7 @@ router.get('/', withAuth, async (req, res) => {
 
     const users = userData.map((project) => project.get({ plain: true })); //update project
 
-    res.render('homepage', { //do I need to add a route for this?
+    res.render('homepage', { //do I need to add a route or handlebars for this?
       users,
      
       // rendering the homepage once the user is logged in
